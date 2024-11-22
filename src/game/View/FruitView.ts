@@ -11,15 +11,10 @@ export default class FruitView extends Phaser.GameObjects.Container {
         super(scene);
         this.scene = scene;
         this.fruitData = fruitData;
-        // Thêm Container này vào scene
         this.scene.add.existing(this);
-        // Tạo vật lý cho Container
         this.scene.physics.world.enable(this);
-        // Tạo sprite cho quả
         this.createFruit(fruitType);
-        // Update
         this.updateContainerSize();
-        // Đặt vị trí ban đầu
         this.setPosition(fruitData.positionX, fruitData.positionY);
     }
 

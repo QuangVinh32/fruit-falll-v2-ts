@@ -11,21 +11,15 @@ export default class PlayerView extends Phaser.GameObjects.Container {
         this.scene = scene;
         this.playerData = playerData;
 
-        // Thêm Container vào scene
         this.scene.add.existing(this);
-        // Kích hoạt vật lý cho toàn bộ Container
         this.scene.physics.world.enable(this);
-        // Tạo sprite đại diện cho Player
         this.createPlayer();
-        // Update
         this.updateContainerSize();
-        // Đặt vị trí ban đầu
         this.setPosition(playerData.positionX, playerData.positionY);
         
     }
 
     createPlayer() {
-        // Tạo Sprite
         this.player = this.scene.physics.add.sprite(
             0,
             0,

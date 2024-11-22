@@ -9,26 +9,43 @@ export default class ResultScene extends Phaser.Scene {
     private levelId: number;
     private fruitId: number;
     private questionId: number;
-    private fruitsCaught: { levelId: number, fruitId: number }[] = [];
+    private fruitsCaught: Map<number, { levelId: number, fruitId: number }[]> = new Map();
+    private validFruitsCount: number;
+
 
     constructor() {
         super("ResultScene");
-        // this.levelId = 1;
     }
 
-    init(data: { score: number, levelId : number, fruitsCaught: { levelId: number, fruitId: number }[] }) {
+    init(data: { score: number, levelId: number, fruitsCaught: { levelId: number, fruitId: number }[],validFruitsCount: number }) {
         this.levelId = data.levelId;
-        this.fruitsCaught = data.fruitsCaught || [];
-        console.log('Fruits caught:', this.fruitsCaught);
-        console.log('levelId:', this.levelId);
-    }
+        this.validFruitsCount = data.validFruitsCount;
 
+        data.fruitsCaught.forEach(fruit => {
+            if (!this.fruitsCaught.has(fruit.levelId)) {
+                this.fruitsCaught.set(fruit.levelId, []);
+            }
+            this.fruitsCaught.get(fruit.levelId)!.push(fruit);
+        });
+
+        console.log('Fruits caught (grouped by level):', this.fruitsCaught);
+        // console.log("Số lượng trái cây hợp lệ:", this.validFruitsCount);
+
+    }
+    
     async create() {
 
-        // const validFruits = this.fruitsCaught.filter(fruit => fruit.fruitId !== 0);
-        // const validFruitsCount = validFruits.length;
-    
-        // console.log('Số lượng trái cây hợp lệ (fruitId khác 0):', validFruitsCount);
+        const fruitCountPerLevel: Map<number, number> = new Map();
+
+        this.fruitsCaught.forEach((fruits, levelId) => {
+            const count = fruits.filter(fruitData => fruitData.fruitId !== 0).length;
+            fruitCountPerLevel.set(levelId, count);
+        });
+
+        fruitCountPerLevel.forEach((count, levelId) => {
+            console.log(`Level ${levelId}: Số lượng fruitId khác 0 là ${count}`);
+        });
+
 
         this.add.text(230, 15, "The Farmer's Fruit", { fontSize: '30px Arial', fontStyle: "bold", color: 'black' });
 
@@ -40,7 +57,7 @@ export default class ResultScene extends Phaser.Scene {
         const cols = 10;
 
         const graphics = this.add.graphics();
-        graphics.lineStyle(4, 0x000000, 1); // Đường viền màu đen, độ dày 4px
+        graphics.lineStyle(4, 0x000000, 1);
         for (let row = 0; row < rows; row++) {
             for (let col = 0; col < cols; col++) {
                 const x = gridStartX + col * cellWidth;
@@ -59,29 +76,28 @@ export default class ResultScene extends Phaser.Scene {
             );
         }
         this.fruitService = new FruitService(this, "assets/Data/fruit.json");
-        await this.fruitService.initializeByNoView(this.levelId,this.fruitId);
+        await this.fruitService.initializeNoView();
+        
 
-        for (let row = 0; row < this.fruitsCaught.length; row++) {
-            const fruitData = this.fruitsCaught[row];
-            this.fruitId = fruitData.fruitId;
+        this.fruitsCaught.forEach((fruits, levelId) => {
+            fruits.forEach((fruitData, index) => {
+                const fruitDTO = this.fruitService?.getFruitDTOById(fruitData.fruitId, levelId);
+                if (fruitDTO) {
+                    const x = 50 + (levelId - 1) * 60 + 30;
+                    const y = 80 + index * 60 + 30;
 
-            const fruitDTO = this.fruitService.getFruitDTOById(this.fruitId, this.levelId);
-            if (fruitDTO) {
-                const x = gridStartX + (this.levelId - 1) * cellWidth + cellWidth / 2;
-                const y = gridStartY + row * cellHeight + cellHeight / 2;
-
-                const fruitType = this.fruitService.getFruitTypeById(fruitDTO.fruitTypeId);
-                if (fruitType) {
-                    this.add.sprite(x, y, fruitType.texture)
-                        .setOrigin(0.5, 0.5)
-                        .setDisplaySize(fruitDTO.width, fruitDTO.height);
+                    const fruitType = this.fruitService?.getFruitTypeById(fruitDTO.fruitTypeId);
+                    if (fruitType) {
+                        this.add.sprite(x, y, fruitType.texture)
+                            .setOrigin(0.5, 0.5)
+                            .setDisplaySize(fruitDTO.width, fruitDTO.height);
+                    }
+                } else {
+                    console.warn(`Missing data for fruitId: ${fruitData.fruitId} in level ${levelId}`);
                 }
-            } else {
-                console.warn(`Missing data for fruitId: ${this.fruitId}`);
-            }
-        }
-
-
+            });
+        });
+            
         // Thêm tên trái cây dưới mỗi cột
         const fruitNames = [
             "Apples", "Pears", "Oranges", "Lemons", "Limes", 
@@ -97,36 +113,35 @@ export default class ResultScene extends Phaser.Scene {
             );
         }
 
-        // this.add.text(150, 410, "How many did you catch?", { fontSize: '30px Arial', fontStyle: "bold", color: 'black' });
-        this.add.text(180, 450, "Use the picture graph above to find the correct amount.", { fontSize: '15px Arial', color: 'black' });
+        // // this.add.text(150, 410, "How many did you catch?", { fontSize: '30px Arial', fontStyle: "bold", color: 'black' });
+        // this.add.text(180, 450, "Use the picture graph above to find the correct amount.", { fontSize: '15px Arial', color: 'black' });
 
-        this.questionService = new QuestionService(this, "assets/Data/question.json");
-        await this.questionService.initialize(this.levelId);
+        // this.questionService = new QuestionService(this, "assets/Data/question.json");
+        // await this.questionService.initialize(this.levelId);
 
-        const questionDTO = this.questionService.getQuestionDTOById(this.levelId);
+        // const questionDTO = this.questionService.getQuestionDTOById(this.levelId);
 
-        if (questionDTO && questionDTO.questionId !== undefined) {
-            console.log(questionDTO);
-            const questionId = questionDTO.questionId;
-            this.optionService = new OptionService(this, "assets/Data/option.json");
-            await this.optionService.initialize(questionId);
-            const optionDTO = this.optionService.getOptionDTOById(questionId);
-            console.log("op", optionDTO);
-        } else {
-            console.error("Không thể lấy questionDTO hoặc questionId không hợp lệ");
-        }
+        // if (questionDTO && questionDTO.questionId !== undefined) {
+        //     console.log(questionDTO);
+        //     const questionId = questionDTO.questionId;
+        //     this.optionService = new OptionService(this, "assets/Data/option.json");
+        //     await this.optionService.initialize(questionId);
+        //     const optionDTO = this.optionService.getAllOptionDTOs();
+        //     console.log("op", optionDTO);
+        // } else {
+        //     console.error("Không thể lấy questionDTO hoặc questionId không hợp lệ");
+        // }
 
-        this.add.text(50, 30, "Next Level", { fontSize: '30px Arial', fontStyle: "bold", color: 'black' })
-        .setInteractive() 
-        .on('pointerdown', () => {
-            this.levelId += 1;
+        // this.add.text(510, 15, "Next Level", { fontSize: '30px Arial', fontStyle: "bold", color: 'black' })
+        // .setInteractive() 
+        // .on('pointerdown', () => {
+        //     this.levelId += 1;
     
-            console.log("Transitioning to LevelScene with levelId:", this.levelId);
-            this.scene.start('LevelScene', {
-                levelId: this.levelId,
-                fruitsCaught: this.fruitsCaught
-            });
-        });
+        //     console.log("Transitioning to LevelScene with levelId:", this.levelId);
+        //     this.scene.start('LevelScene', {
+        //         levelId: this.levelId,
+        //     });
+        // });
     
     }
 

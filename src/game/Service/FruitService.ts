@@ -63,7 +63,7 @@ export default class FruitService {
     }
     
 
-    async initialize(levelId?: number): Promise<void> {
+    async initialize(levelId?: number, screenWidth?: number, screenHeight?: number): Promise<void> {
         try {
             const data = await this.loadData();
             this.mapFruitTypes(data);
@@ -74,6 +74,22 @@ export default class FruitService {
             console.error("Failed to initialize fruit service:", error);
         }
     }
+    async initializeNoView(levelId?: number, screenWidth?: number, screenHeight?: number): Promise<void> {
+        try {
+            const data = await this.loadData();
+            this.mapFruitTypes(data);
+            const fruits = this.mapFruits(data, levelId);
+            fruits.forEach(dto => this.fruitController.addFruits(dto));
+            // fruits.forEach(dto => this.createFruitView(dto));
+        } catch (error) {
+            console.error("Failed to initialize fruit service:", error);
+        }
+    }
+
+    
+
+
+
     async initializeById(levelId?: number, fruitId?: number): Promise<void> {
         try {
             const data = await this.loadData();

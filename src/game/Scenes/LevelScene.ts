@@ -13,17 +13,15 @@ export default class LevelScene extends Phaser.Scene {
     private fruitView: any;
     private score: number;
     private catchSound: Phaser.Sound.BaseSound | null = null;
-    private fruitsCaught: { levelId: number, fruitId: number }[];  
-
-
-
+    private fruitsCaught: { levelId: number, fruitId: number }[]; 
+ 
     constructor() {
         super("LevelScene");
-        this.levelId = 1;
+        this.levelId = 3;
         this.canMovePlayer = false;
         this.canDropFruit = false; 
         this.score = 0;
-        this.fruitsCaught = [];  
+        this.fruitsCaught = []; 
 
     }
     preload() {
@@ -38,19 +36,16 @@ export default class LevelScene extends Phaser.Scene {
         this.load.image("peache", "assets/Images/peache.png");
         this.load.image("pear", "assets/Images/pear.png");
         this.load.audio("sound_catch", "assets/Audio/sound_catch.mp3");
-
     }
-    // init(data: { levelId: number, fruitsCaught: { levelId: number, fruitId: number }[] }) {
-    //     if (data) {
-    //         this.levelId = data.levelId || 1; 
-    //         this.fruitsCaught = data.fruitsCaught || []; 
-    //     }
-    //     console.log("LevelScene initialized with levelId:", this.levelId);
-    //     console.log("Fruits caught from previous level:", this.fruitsCaught);
-    // }
+    init(data: { levelId: number, fruitsCaught: { levelId: number, fruitId: number }[] }) {
+        if (data) {
+            this.levelId = data.levelId || 1; 
+            this.fruitsCaught = data.fruitsCaught || []; 
+        }
+        console.log("LevelScene initialized with levelId:", this.levelId);
+        console.log("Fruits caught from previous level:", this.fruitsCaught);
+    }
     
- 
-
     async create() {
         this.catchSound = this.sound.add("sound_catch", {
             volume: 1,
@@ -65,11 +60,7 @@ export default class LevelScene extends Phaser.Scene {
         const playerDTO = this.playerService.getPlayerDTOById(this.levelId);
         if (playerDTO) {
             this.playerView = this.playerService.getPlayerViewById(this.levelId);
-            // console.log(this.playerView);
-            // console.log(playerDTO);
-
             if (this.playerView) {
-                // console.log(this.playerView)
                 this.playerView.setPosition(350, 530);
                 this.physics.add.existing(this.playerView);
                 this.playerView.body.setCollideWorldBounds(true);
@@ -83,6 +74,7 @@ export default class LevelScene extends Phaser.Scene {
                 });
             }
         }
+
         this.events.on("startFruitFall", () => {
             this.canDropFruit = true;
         });
@@ -109,7 +101,12 @@ export default class LevelScene extends Phaser.Scene {
             if (fruits.length === 0) {
                 console.warn("Tất cả trái cây đã được sử dụng.");
                 console.log("v",this.levelId)
-                this.scene.start('ResultScene', { score: this.score,levelId: this.levelId, fruitsCaught: this.fruitsCaught });
+                this.scene.start('ResultScene', { score: this.score,levelId: this.levelId, fruitsCaught: this.fruitsCaught 
+                });
+                this.scene.start('QuestionAndOptionScene', { score: this.score,levelId: this.levelId, fruitsCaught: this.fruitsCaught 
+                });
+                // this.scene.start('WrongChoiceScene');
+
                 return;
             }
     
@@ -118,10 +115,6 @@ export default class LevelScene extends Phaser.Scene {
             const fruitView = this.fruitService?.getFruitViewById(randomFruit.fruitId, this.levelId);
     
             console.log("id", randomFruit.fruitId);
-            // this.fruitsCaught.push({
-            //     levelId: this.levelId,
-            //     fruitId: randomFruit.fruitId
-            // });
     
             if (fruitView) {
                 this.physics.add.existing(fruitView);
@@ -130,13 +123,13 @@ export default class LevelScene extends Phaser.Scene {
                 if (body) {
                     switch (this.levelId) {
                         case 1:
-                            body.setGravityY(600);
+                            body.setGravityY(800);
                             break;
                         case 2:
-                            body.setGravityY(700);
+                            body.setGravityY(900);
                             break;
                         case 3:
-                            body.setGravityY(800);
+                            body.setGravityY(1000);
                             break;
                         default:
                             body.setGravityY(0); 
@@ -163,10 +156,12 @@ export default class LevelScene extends Phaser.Scene {
                         levelId: this.levelId,
                         fruitId: randomFruit.fruitId
                     });
+
+      
                 });
     
                 this.time.addEvent({
-                    delay: 3000,
+                    delay: 2000,
                     callback: () => {
                         if (fruitView.body) {
                             const body = fruitView.body as Phaser.Physics.Arcade.Body;
@@ -183,14 +178,10 @@ export default class LevelScene extends Phaser.Scene {
                 });
             }
         };
-    
         this.time.addEvent({
-            delay: 3000,
+            delay: 2000,
             callback: spawnFruit,
             loop: true,
         });
     }
-    
-    
-
 }
